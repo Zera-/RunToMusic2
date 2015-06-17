@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">RunToMusic</string>
+    <string name="drawer_open">Menu opened</string>
+    <string name="drawer_close">Menu closed</string>
+    <string name="action_settings">Settings</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="adapt_mode">adapt ToMusic</string>
+    <string name="challenge_mode">challenge ToMusic</string>
+</resources>
