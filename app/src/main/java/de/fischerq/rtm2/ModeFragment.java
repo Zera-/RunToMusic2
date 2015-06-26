@@ -56,6 +56,11 @@ public class ModeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 Toast.makeText(getActivity(), "Selected AdaptMode", Toast.LENGTH_SHORT).show();
+                Fragment fragment = getFragmentManager().findFragmentByTag(PlayingFragment.TAG);
+                if (fragment == null) {
+                    fragment = new PlayingFragment();
+                }
+                getFragmentManager().beginTransaction().replace(R.id.container, fragment, PlayingFragment.TAG).commit();
             }
         });
 
@@ -64,6 +69,12 @@ public class ModeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 Toast.makeText(getActivity(), "Selected ChallengeMode", Toast.LENGTH_SHORT).show();
+                Fragment fragment = getFragmentManager().findFragmentByTag(PlayingFragment.TAG);
+                if (fragment == null) {
+                    fragment = new PlayingFragment();
+                }
+                getFragmentManager().beginTransaction().replace(R.id.container, fragment, PlayingFragment.TAG).commit();
+
             }
         });
 

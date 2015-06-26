@@ -1,7 +1,6 @@
 package de.fischerq.rtm2;
 
 import android.app.Fragment;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
@@ -41,7 +40,6 @@ public class MainActivity extends ActionBarActivity
         switch (position)
         {
             case 0:
-                Toast.makeText(this, "goto mode", Toast.LENGTH_SHORT).show();
                 fragment = getFragmentManager().findFragmentByTag(ModeFragment.TAG);
                 if (fragment == null) {
                     fragment = new ModeFragment();
@@ -49,18 +47,22 @@ public class MainActivity extends ActionBarActivity
                 getFragmentManager().beginTransaction().replace(R.id.container, fragment, ModeFragment.TAG).commit();
                 break;
             case 1:
-                Toast.makeText(this, "goto playlists ", Toast.LENGTH_SHORT).show();
-                fragment = getFragmentManager().findFragmentByTag(StatsFragment.TAG);
+                fragment = getFragmentManager().findFragmentByTag(PlaylistFragment.TAG);
                 if (fragment == null) {
-                    fragment = new StatsFragment();
+                    fragment = new PlaylistFragment();
                 }
-                getFragmentManager().beginTransaction().replace(R.id.container, fragment, StatsFragment.TAG).commit();
+                getFragmentManager().beginTransaction().replace(R.id.container, fragment, PlaylistFragment.TAG).commit();
                 break;
             case 2:
                 Toast.makeText(this, "goto playing", Toast.LENGTH_SHORT).show();
+                fragment = getFragmentManager().findFragmentByTag(PlayingFragment.TAG);
+                if (fragment == null) {
+                    fragment = new PlayingFragment();
+                }
+                getFragmentManager().beginTransaction().replace(R.id.container, fragment, PlayingFragment.TAG).commit();
                 break;
             default:
-                Toast.makeText(this, "Menu item selected -> " + position, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Unknown Menu item selected -> " + position, Toast.LENGTH_SHORT).show();
                 break;
         }
     }

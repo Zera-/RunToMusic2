@@ -8,4 +8,48 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="adapt_mode">adapt ToMusic</string>
     <string name="challenge_mode">challenge ToMusic</string>
+    <string name="title_playlists">Playlists</string>
+    <string name="button_options">Button options</string>
+
+    <string name="sdcard_readonly">Die SD-Karte ist schreibgeschützt. In Ringdroid muss sie beschreibbar sein.</string>
+    <string name="no_sdcard">Ringdroid kann nur bei eingesetzter SD-Karte ausgeführt werden.</string>
+    <string name="sdcard_shared">Ringdroid kann nur mit einem als USB-Gerät angeschlossenen Gerät ausgeführt werden.</string>
+
+    <string name="context_menu_edit">Bearbeiten</string>
+    <string name="context_menu_delete">Löschen</string>
+    <string name="context_menu_contact">Einem Kontakt zuweisen</string>
+    <string name="context_menu_default_ringtone">Zum Standard machen</string>
+    <string name="context_menu_default_notification">Zum Standard machen</string>
+
+
+    <string name="default_ringtone_success_message">Standardrufzeichen geändert</string>
+    <string name="default_notification_success_message">Changed default notification sound</string>
+
+    <string name="artist_name">Ringdroid</string>
+
+    <string name="delete_ringtone">Rufzeichen löschen</string>
+    <string name="delete_alarm">Wecker löschen</string>
+    <string name="delete_notification">Benachrichtigung löschen</string>
+    <string name="delete_music">Musik löschen</string>
+    <string name="delete_audio">Audio löschen</string>
+
+    <string name="confirm_delete_ringdroid">Sind Sie sicher?</string>
+    <string name="confirm_delete_non_ringdroid">Sind Sie sicher?  Diese Datei wurde nicht mit Ringdroid erstellt!</string>
+
+    <string name="delete_ok_button">Löschen</string>
+    <string name="delete_cancel_button">Abbrechen</string>
+
+    <string name="delete_failed">Datei konnte nicht gelöscht werden</string>
+
+    <string name="alert_title_success">Erfolg</string>
+    <string name="alert_title_failure">Fehler</string>
+    <string name="alert_ok_button">OK</string>
+    <string name="alert_yes_button">Ja, bitte!</string>
+    <string name="alert_no_button">Nein, vielen Dank.</string>
+    <string name="search_edit_box">search</string>
+    <string name="button_start_record_activity">record</string>
+    <string name="menu_about">about</string>
+    <string name="menu_show_all_audio">All</string>
+    <string name="select_song_activity">SelectSong</string>
+
 </resources>
