@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "de.fischerq.rtm2"
-        minSdkVersion 16
+        minSdkVersion 19
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
@@ -17,6 +17,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+
 }
 
 dependencies {
@@ -24,4 +26,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:22.1.1'
     compile 'com.android.support:support-v4:22.1.1'
     compile 'com.android.support:recyclerview-v7:22.1.1'
+    compile project(":SoundTouch-Android")
 }

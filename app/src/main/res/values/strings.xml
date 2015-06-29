@@ -51,5 +51,8 @@
     <string name="menu_about">about</string>
     <string name="menu_show_all_audio">All</string>
     <string name="select_song_activity">SelectSong</string>
+    <string name="addSong">Add song</string>
+    <string name="play">Play</string>
+    <string name="stop">Stop</string>
 
 </resources>

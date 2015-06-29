@@ -19,7 +19,7 @@ import java.util.List;
 
 public class ModeFragment extends Fragment {
     public static final String TAG = "mode";
-
+    private double bpm;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_mode, container, false);
@@ -27,6 +27,7 @@ public class ModeFragment extends Fragment {
         SeekBar speedSlider = (SeekBar) v.findViewById(R.id.speedSlider);
         speedSlider.setProgress(10);
         TextView speedDisplay = (TextView) v.findViewById(R.id.speedDisplay);
+        bpm = 160;
         speedDisplay.setText("BPM: " + 160);
 
         speedSlider.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
@@ -44,7 +45,7 @@ public class ModeFragment extends Fragment {
             }
 
             void update(int position) {
-                int bpm = 160 + (int) (((double) position - 10) / 10 * 20);
+                bpm = 160 + (int) (((double) position - 10) / 10 * 20);
                 TextView speedDisplay = (TextView) getView().findViewById(R.id.speedDisplay);
                 speedDisplay.setText("BPM: " + bpm);
             }
@@ -59,6 +60,9 @@ public class ModeFragment extends Fragment {
                 Fragment fragment = getFragmentManager().findFragmentByTag(PlayingFragment.TAG);
                 if (fragment == null) {
                     fragment = new PlayingFragment();
+                    Bundle args = new Bundle();
+                    args.putInt("mode", 1);
+                    fragment.setArguments(args);
                 }
                 getFragmentManager().beginTransaction().replace(R.id.container, fragment, PlayingFragment.TAG).commit();
             }
@@ -72,6 +76,10 @@ public class ModeFragment extends Fragment {
                 Fragment fragment = getFragmentManager().findFragmentByTag(PlayingFragment.TAG);
                 if (fragment == null) {
                     fragment = new PlayingFragment();
+                    Bundle args = new Bundle();
+                    args.putInt("mode", 2);
+                    args.putDouble("speed", bpm);
+                    fragment.setArguments(args);
                 }
                 getFragmentManager().beginTransaction().replace(R.id.container, fragment, PlayingFragment.TAG).commit();
 
