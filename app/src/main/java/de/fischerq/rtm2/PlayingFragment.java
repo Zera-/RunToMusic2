@@ -15,6 +15,7 @@ import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.provider.OpenableColumns;
 import android.text.InputType;
 import android.util.Log;
@@ -32,31 +33,31 @@ import com.smp.soundtouchandroid.SoundStreamAudioPlayer;
 
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.List;
 
 
-public class PlayingFragment extends Fragment implements SensorEventListener, OnProgressChangedListener
+public class PlayingFragment extends Fragment implements StepListener, OnProgressChangedListener //SensorEventListener
 {
     public static final String TAG = "playing";
     private static final int PICKFILE_RESULT_CODE = 1;
     private static long max_delay = 1000;
     View myView;
 
+    private PowerManager.WakeLock wakeLock;
     private SensorManager sensorManager;
-    private long lastTime;
+    private StepDetector stepDetector;
     private double defaultMusicSpeed;
     private double playbackSpeed;
     private double runningSpeed;
 
-    private int stepcounter;
-    private int last_counter = 0;
-    private int current_intervals_used = 0;
-    private final static int total_intervals = 25;
-    private LinkedList<Integer> step_updates = new LinkedList<Integer>();
     private LinkedList<Long> last_steps = new LinkedList<Long>();
     private long last_time = 0;
     private static long timeout = 5000;
     private static int n_buffered_steps = 6;
+    private static double adjustment_rate = 100;//bpm change/sec
     private boolean mIsPlaying;
+    private Handler speedUpdater;
+    private static long updateDelay = 200;
 
     private Uri mFileURI;
     private class PlaylistEntry
@@ -74,8 +75,7 @@ public class PlayingFragment extends Fragment implements SensorEventListener, On
 
     SoundStreamAudioPlayer stream;
 
-    private Handler speedUpdater;
-    private static long updateDelay = 200;
+
 
     private Runnable speedUpdaterRunnable = new Runnable() {
         @Override
@@ -111,6 +111,7 @@ public class PlayingFragment extends Fragment implements SensorEventListener, On
                 last_counter = stepcounter;
             }
 */
+            double target_speed = defaultMusicSpeed;
             if(adapt) {
                 double avg_time = 0;
                 for (int i = 1; i < last_steps.size(); ++i)
@@ -120,14 +121,19 @@ public class PlayingFragment extends Fragment implements SensorEventListener, On
                 else
                     runningSpeed = 0;
                 if (runningSpeed > 0.666 * defaultMusicSpeed && runningSpeed < defaultMusicSpeed * 1.75)
-                    playbackSpeed = runningSpeed;
+                    target_speed = runningSpeed;
                 else
-                    playbackSpeed = defaultMusicSpeed;
+                    target_speed = defaultMusicSpeed;
             }
 
             long now = System.currentTimeMillis();
             if(now-last_time > timeout)
-                playbackSpeed = defaultMusicSpeed;
+                target_speed = defaultMusicSpeed;
+
+            if(Math.abs(target_speed - playbackSpeed) < adjustment_rate*updateDelay/1000)
+                playbackSpeed = target_speed;
+            else
+                playbackSpeed +=  Math.signum(target_speed - playbackSpeed)*adjustment_rate*updateDelay/1000;
 
             float speedup = (float)(playbackSpeed / defaultMusicSpeed);
 
@@ -139,6 +145,15 @@ public class PlayingFragment extends Fragment implements SensorEventListener, On
             speedUpdater.postDelayed(this, updateDelay);
         }
     };
+
+    private void acquireWakeLock() {
+        PowerManager pm = (PowerManager) getActivity().getSystemService(Context.POWER_SERVICE);
+        int wakeFlags;
+            wakeFlags = PowerManager.SCREEN_DIM_WAKE_LOCK;
+
+        wakeLock = pm.newWakeLock(wakeFlags, TAG);
+        wakeLock.acquire();
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -179,6 +194,9 @@ public class PlayingFragment extends Fragment implements SensorEventListener, On
 
             mIsPlaying = false;
 
+            acquireWakeLock();
+            List<Sensor> sens = sensorManager.getSensorList(Sensor.TYPE_ALL);
+            /*
             Sensor countSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
             if (countSensor != null) {
                 sensorManager.registerListener(this, countSensor, SensorManager.SENSOR_DELAY_FASTEST);
@@ -186,7 +204,17 @@ public class PlayingFragment extends Fragment implements SensorEventListener, On
                 Toast.makeText(getActivity(), "Count sensor not available!", Toast.LENGTH_LONG).show();
             }
             lastTime = -1;
-            stepcounter = 0;
+            stepcounter = 0;*/
+
+            stepDetector = new StepDetector();
+            stepDetector.addStepListener(this);
+            Sensor accSensor = sensorManager.getDefaultSensor(
+                    Sensor.TYPE_ACCELEROMETER /*|
+                Sensor.TYPE_MAGNETIC_FIELD |
+                Sensor.TYPE_ORIENTATION*/);
+            sensorManager.registerListener(stepDetector,
+                    accSensor,
+                    SensorManager.SENSOR_DELAY_FASTEST);
 
             TextView playlist_info = (TextView)myView.findViewById(R.id.playlist_info);
             playlist_info.setText("Queued songs: "+queued_songs.size());
@@ -232,7 +260,7 @@ public class PlayingFragment extends Fragment implements SensorEventListener, On
     }
 
 
-    @Override
+    /*@Override
     public void onSensorChanged(SensorEvent event) {
         long nextTime = event.timestamp;
         last_steps.offer(nextTime);
@@ -246,6 +274,15 @@ public class PlayingFragment extends Fragment implements SensorEventListener, On
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    }
+*/
+
+    public void onStep(long timestamp)
+    {
+        last_steps.offer(timestamp);
+        if(last_steps.size() > n_buffered_steps)
+            last_steps.poll();
+        last_time = System.currentTimeMillis();
     }
 
    @Override
