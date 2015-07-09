@@ -36,7 +36,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 
-public class PlayingFragment extends Fragment implements StepListener, OnProgressChangedListener //SensorEventListener
+public class PlayingFragment extends Fragment implements StepListener, OnProgressChangedListener, SensorEventListener
 {
     public static final String TAG = "playing";
     private static final int PICKFILE_RESULT_CODE = 1;
@@ -194,27 +194,25 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
 
             mIsPlaying = false;
 
-            acquireWakeLock();
-            List<Sensor> sens = sensorManager.getSensorList(Sensor.TYPE_ALL);
-            /*
+
+/*
             Sensor countSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
             if (countSensor != null) {
                 sensorManager.registerListener(this, countSensor, SensorManager.SENSOR_DELAY_FASTEST);
             } else {
                 Toast.makeText(getActivity(), "Count sensor not available!", Toast.LENGTH_LONG).show();
             }
-            lastTime = -1;
-            stepcounter = 0;*/
+*/
 
+            acquireWakeLock();
             stepDetector = new StepDetector();
             stepDetector.addStepListener(this);
             Sensor accSensor = sensorManager.getDefaultSensor(
-                    Sensor.TYPE_ACCELEROMETER /*|
-                Sensor.TYPE_MAGNETIC_FIELD |
-                Sensor.TYPE_ORIENTATION*/);
+                    Sensor.TYPE_ACCELEROMETER);
             sensorManager.registerListener(stepDetector,
                     accSensor,
                     SensorManager.SENSOR_DELAY_FASTEST);
+
 
             TextView playlist_info = (TextView)myView.findViewById(R.id.playlist_info);
             playlist_info.setText("Queued songs: "+queued_songs.size());
@@ -260,13 +258,12 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
     }
 
 
-    /*@Override
+    @Override
     public void onSensorChanged(SensorEvent event) {
         long nextTime = event.timestamp;
         last_steps.offer(nextTime);
         if(last_steps.size() > n_buffered_steps)
             last_steps.poll();
-        stepcounter++;
         last_time = System.currentTimeMillis();
         //TextView counter = (TextView) myView.findViewById(R.id.counter);
         //counter.setText("steps:"+stepcounter);
@@ -275,7 +272,7 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
-*/
+
 
     public void onStep(long timestamp)
     {
@@ -283,6 +280,7 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
         if(last_steps.size() > n_buffered_steps)
             last_steps.poll();
         last_time = System.currentTimeMillis();
+        Log.d(TAG, "Got Step");
     }
 
    @Override
