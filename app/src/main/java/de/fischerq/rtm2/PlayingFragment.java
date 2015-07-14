@@ -64,12 +64,7 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
     private static long updateDelay = 200;
 
     private Uri mFileURI;
-    private class PlaylistEntry
-    {
-        public Uri uri;
-        public double speed;
-        public String name;
-    }
+
     private LinkedList<PlaylistEntry> queued_songs = new LinkedList<PlaylistEntry>();
     private double songSpeed;
     private String mTitle;
@@ -165,21 +160,6 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
 
             sensorManager = (SensorManager) getActivity().getSystemService(Context.SENSOR_SERVICE);
 
-            Button add = (Button) myView.findViewById(R.id.addSong);
-            add.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    try{
-                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                        intent.setType("audio/*");
-                        startActivityForResult(intent,PICKFILE_RESULT_CODE);
-                    }
-                    catch(ActivityNotFoundException exp){
-                        Toast.makeText(getActivity().getBaseContext(), "No File (Manager / Explorer)etc Found In Your Device",Toast.LENGTH_LONG).show();
-                    }
-                }
-            });
-
             Button play = (Button) myView.findViewById(R.id.play);
             play.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -265,6 +245,11 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
         return myView;
     }
 
+    public void setPlaylist(LinkedList<PlaylistEntry> list)
+    {
+        queued_songs = list;
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -320,55 +305,6 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
         Log.d(TAG, "Got Step");
     }
 
-   @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // TODO Auto-generated method stub
-        switch(requestCode){
-            case PICKFILE_RESULT_CODE:
-                if(resultCode== Activity.RESULT_OK){
-
-                    mFileURI = data.getData();
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(this.getActivity());
-                    builder.setTitle("Song's BPM");
-
-// Set up the input
-                    final EditText input = new EditText(this.getActivity());
-                    input.setInputType(InputType.TYPE_CLASS_NUMBER);
-                    builder.setView(input);
-
-// Set up the buttons
-                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            int number = Integer.parseInt(input.getText().toString());
-                            PlaylistEntry p = new PlaylistEntry();
-                            p.speed = number;
-                            p.uri = mFileURI;
-
-                            Cursor returnCursor =
-                                    getActivity().getApplicationContext().getContentResolver().query(p.uri, null, null, null, null);
-                            returnCursor.moveToFirst();
-                            p.name = returnCursor.getString(returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-                            returnCursor.close();
-                            queued_songs.offer(p);
-
-                            TextView playlist_info = (TextView)myView.findViewById(R.id.playlist_info);
-                            playlist_info.setText("Queued songs: " + queued_songs.size());
-                        }
-                    });
-                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.cancel();
-                        }
-                    });
-
-                    builder.show();
-                }
-                break;
-        }
-    }
 
     public void onProgressChanged(int track, double currentTime,
                            long position)

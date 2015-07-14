@@ -38,12 +38,6 @@
         android:layout_height="30dp"/>
 
     <Button
-        android:id="@+id/addSong"
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:text="@string/addSong"/>
-
-    <Button
         android:id="@+id/play"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
