@@ -48,9 +48,25 @@
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:text="@string/play"/>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center">
+        <Button
+            android:id="@+id/pause"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="@string/pause"/>
+        <Button
+            android:id="@+id/resume"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="@string/resume"/>
+    </LinearLayout>
     <Button
-        android:id="@+id/stop"
+        android:id="@+id/next"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:text="@string/stop"/>
+        android:text="@string/next"/>
 </LinearLayout>

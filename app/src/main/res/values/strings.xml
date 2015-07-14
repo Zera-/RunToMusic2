@@ -53,6 +53,8 @@
     <string name="select_song_activity">SelectSong</string>
     <string name="addSong">Add song</string>
     <string name="play">Play</string>
-    <string name="stop">Stop</string>
+    <string name="pause">Pause</string>
+    <string name="next">Next</string>
+    <string name="resume">Resume</string>
 
 </resources>

@@ -31,6 +31,10 @@ import android.widget.Toast;
 import com.smp.soundtouchandroid.OnProgressChangedListener;
 import com.smp.soundtouchandroid.SoundStreamAudioPlayer;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +57,7 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
     private LinkedList<Long> last_steps = new LinkedList<Long>();
     private long last_time = 0;
     private static long timeout = 5000;
-    private static int n_buffered_steps = 6;
+    private static int n_buffered_steps = 8;
     private static double adjustment_rate = 100;//bpm change/sec
     private boolean mIsPlaying;
     private Handler speedUpdater;
@@ -74,8 +78,6 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
     boolean adapt;
 
     SoundStreamAudioPlayer stream;
-
-
 
     private Runnable speedUpdaterRunnable = new Runnable() {
         @Override
@@ -122,8 +124,10 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
                     runningSpeed = 0;
                 if (runningSpeed > 0.666 * defaultMusicSpeed && runningSpeed < defaultMusicSpeed * 1.75)
                     target_speed = runningSpeed;
-                else
-                    target_speed = defaultMusicSpeed;
+                else if (runningSpeed < 0.666 * defaultMusicSpeed)
+                    target_speed = 0.666 * defaultMusicSpeed;
+                else if (runningSpeed > 1.75 * defaultMusicSpeed)
+                    target_speed = 1.75 * defaultMusicSpeed;
             }
 
             long now = System.currentTimeMillis();
@@ -138,7 +142,7 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
             float speedup = (float)(playbackSpeed / defaultMusicSpeed);
 
             if(speedDisplay != null)
-                speedDisplay.setText("Speed: "+playbackSpeed);
+                speedDisplay.setText("BPM: "+(int)(playbackSpeed));
             if(stream != null)
                 stream.setTempo(speedup);
 
@@ -184,28 +188,48 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
                 }
             });
 
-            Button stop = (Button) myView.findViewById(R.id.stop);
-            stop.setOnClickListener(new View.OnClickListener() {
+            Button pause = (Button) myView.findViewById(R.id.pause);
+            pause.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    stream.stop();
+                    if(stream != null)
+                        stream.pause();
+                }
+            });
+
+            Button resume = (Button) myView.findViewById(R.id.resume);
+            resume.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(stream != null)
+                        stream.start();
+                }
+            });
+
+            Button next = (Button) myView.findViewById(R.id.next);
+            next.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    playNext();
                 }
             });
 
             mIsPlaying = false;
 
 
-/*
+
             Sensor countSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
             if (countSensor != null) {
                 sensorManager.registerListener(this, countSensor, SensorManager.SENSOR_DELAY_FASTEST);
             } else {
                 Toast.makeText(getActivity(), "Count sensor not available!", Toast.LENGTH_LONG).show();
             }
-*/
+
+
+
 
             acquireWakeLock();
-            stepDetector = new StepDetector();
+            stepDetector = new StepDetector(this.getActivity().getBaseContext());
             stepDetector.addStepListener(this);
             Sensor accSensor = sensorManager.getDefaultSensor(
                     Sensor.TYPE_ACCELEROMETER);
@@ -221,7 +245,7 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
             speedUpdater.postDelayed(speedUpdaterRunnable, 100);
 
             adapt = true;
-            if(getArguments().containsKey("mode"))
+            if(getArguments() != null && getArguments().containsKey("mode"))
             {
                 int mode = getArguments().getInt("mode");
                 if(mode == 1) {
@@ -260,11 +284,24 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        FileOutputStream fos;
+        try {
+            fos  = getActivity().getBaseContext().openFileOutput("logDetector.csv", Context.MODE_APPEND);
+            Log.d(TAG, "FOS: "+getActivity().getFilesDir().getAbsolutePath());
+            fos.write(((event.timestamp / 1000000) +", "+ 3 +", 2, "+ 0+", 0\n").getBytes());
+            fos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        /*
         long nextTime = event.timestamp;
         last_steps.offer(nextTime);
         if(last_steps.size() > n_buffered_steps)
             last_steps.poll();
         last_time = System.currentTimeMillis();
+        */
+
         //TextView counter = (TextView) myView.findViewById(R.id.counter);
         //counter.setText("steps:"+stepcounter);
     }
@@ -339,7 +376,7 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
         TextView currentSong = (TextView) myView.findViewById(R.id.progress);
         int seconds = (int)currentTime;
         if(currentSong != null)
-            currentSong.setText( "Time: "+seconds/60+":"+seconds%60);
+            currentSong.setText( "Current time: "+seconds/60+":"+seconds%60);
     }
 
     public void onTrackEnd(int track)
@@ -374,12 +411,13 @@ public class PlayingFragment extends Fragment implements StepListener, OnProgres
                 return;
             stream = new SoundStreamAudioPlayer(0, getActivity().getApplicationContext(), next.uri, 1, 1);
             defaultMusicSpeed = next.speed;
+            playbackSpeed = defaultMusicSpeed;
             TextView currentSong = (TextView) myView.findViewById(R.id.currentSong);
             if(currentSong != null)
                 currentSong.setText("Song: "+String.valueOf(next.name));
 
             TextView playlist_info = (TextView)myView.findViewById(R.id.playlist_info);
-            playlist_info.setText("Queued songs: "+queued_songs.size());
+            playlist_info.setText("Playlist size: "+queued_songs.size());
 
             stream.setOnProgressChangedListener(this);
             new Thread(stream).start();

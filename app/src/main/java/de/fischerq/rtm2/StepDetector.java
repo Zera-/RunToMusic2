@@ -18,21 +18,21 @@
 
 package de.fischerq.rtm2;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 
+import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
-
-/**
- * Detects steps and notifies all listeners (that implement StepListener).
- * @author Levente Bagi
- * @todo REFACTOR: SensorListener is deprecated
- */
 
 
 public class StepDetector implements SensorEventListener
@@ -43,12 +43,16 @@ public class StepDetector implements SensorEventListener
         public double r = 0;
         public long t = 0;
     }
+
+    private float[] smoothed = null;
+    private static final float smooth_factor = 7;
     private LinkedList<float[]> lastValues = new LinkedList<float[]>();
     private static final int filter_window = 3;
 
-    boolean rising = true;
-    private static final double R_NULL = 10;
-    private static final double threshold = 17;
+    private static final double avg_factor = 0.5;
+    private double average = 10;
+    private static final double threshold = 18;
+    private static final double t_threshold = 150;
 
     private boolean gotCrossing = false;
     private Sample next_max = null;
@@ -56,8 +60,12 @@ public class StepDetector implements SensorEventListener
     private LinkedList<Sample> last_maxes = new LinkedList<Sample>();
 
     private ArrayList<StepListener> mStepListeners = new ArrayList<StepListener>();
-    
-    public StepDetector() {
+
+    private Context c;
+    public StepDetector(Context b) {
+        c= b;
+
+        c.deleteFile("logDetector.csv");
     }
     
     public void setSensitivity(float sensitivity) {
@@ -69,15 +77,34 @@ public class StepDetector implements SensorEventListener
     
     //public void onSensorChanged(int sensor, float[] values) {
     public void onSensorChanged(SensorEvent event) {
+        try {
+            FileOutputStream fos  = c.openFileOutput("logDetector.csv", Context.MODE_APPEND);
+
+
         Sensor sensor = event.sensor;
         if(!(sensor.getType() == Sensor.TYPE_ACCELEROMETER)) {
             Log.d(TAG, "Bad sensor");
             return;
         }
         synchronized (this) {
-            lastValues.offer(event.values);
+
+            if(smoothed == null)
+                smoothed = event.values;
+            else
+            {
+                if(last_sample != null)
+                {
+                    float delta_t = Math.min(1, smooth_factor * (float)((event.timestamp - last_sample.t) / 1000000) / 1000);
+                    for (int j=0 ; j<3 ; j++) {
+                        smoothed[j] = event.values[j] *delta_t + (1-delta_t)*smoothed[j];
+                    }
+                }
+            }
+
+            /*lastValues.offer(event.values);
             if(lastValues.size() > filter_window)
                 lastValues.poll();
+
 
             float[] avg = new float[3];
             for(int i = 0; i < lastValues.size(); ++i)
@@ -86,44 +113,64 @@ public class StepDetector implements SensorEventListener
                 for (int j=0 ; j<3 ; j++) {
                     avg[j] += val[j]/lastValues.size();
                 }
-            }
+            }*/
 
             double r = 0;
             for (int i=0 ; i<3 ; i++) {
-               r+= avg[i]*avg[i];
+               r+= smoothed[i]*smoothed[i];
             }
             r = Math.sqrt(r);
 
             Sample s = new Sample();
             s.r = r;
             s.t = event.timestamp;
+
+            if(last_sample != null)
+            {
+                double delta_t = Math.min(1, avg_factor* (double)((s.t - last_sample.t) / 1000000) / 1000);
+                average = s.r *delta_t + (1-delta_t)*average;
+            }
+            double ch = 0;
+            double ch_t = 0;
+            if(last_maxes.size() == 3) {
+                ch = last_maxes.get(2).r - last_maxes.get(1).r + -(next_max.r - last_maxes.get(2).r);
+                ch_t = (next_max.t - last_maxes.get(1).t)/1000000 /10;
+            }
+                fos.write(((s.t / 1000000) + ", " + s.r + ", 0, " + ch_t + ", " + ch + "\n").getBytes());
+
+
             if(last_sample == null) {
                 last_sample = s;
-                if(s.r < R_NULL)
-                    rising = false;
-                else
-                    rising = true;
                 next_max = s;
             }
             else
             {
                 //Log.d(TAG, String.valueOf(s.r));
                 //Log.d(TAG, (s.r < R_NULL)+" "+(last_sample.r < R_NULL));
-                if((s.r < R_NULL) != (last_sample.r < R_NULL))
+                if((s.r < average) != (last_sample.r < average))
                 {
                     if(gotCrossing)
                     {
-                        Log.d(TAG, "crossing, Adding a extr "+next_max.r);
-                        last_maxes.offer(next_max);
-                        if(last_maxes.size() > 3) {
-                            last_maxes.poll();
+                        if(last_maxes.size() < 3)
+                            last_maxes.offer(next_max);
+                        else if((last_maxes.getLast().r > average) == (next_max.r > average))
+                        {
+                            last_maxes.pollLast();
+                            last_maxes.offer(next_max);
+                        }
+                        else {
+                            last_maxes.pollFirst();
+                            last_maxes.offer(next_max);
                         }
                         if(last_maxes.size() == 3)
                         {
-                            double change = last_maxes.get(1).r-last_maxes.get(0).r + -(last_maxes.get(2).r-last_maxes.get(1).r);
-                            if(change > 2*threshold)
+                            double change = last_maxes.get(1).r-last_maxes.get(0).r + -(last_maxes.get(2).r - last_maxes.get(1).r);
+                            double change_t = (last_maxes.get(2).t-last_maxes.get(0).t) / 1000000;
+
+                            if(change > threshold && change_t > t_threshold)
                             {
-                                Log.d(TAG, "sending step "+last_maxes.get(1).r);
+                                fos.write(((s.t / 1000000) + ", " + s.r + ", 1, 0, 0\n").getBytes());
+
                                 for(int i = 0; i< mStepListeners.size(); ++i)
                                     mStepListeners.get(i).onStep(last_maxes.get(1).t);
                             }
@@ -133,11 +180,10 @@ public class StepDetector implements SensorEventListener
                         gotCrossing = true;
 
                     next_max = new Sample();
-                    next_max.r = R_NULL;
-                    rising = !rising;
+                    next_max.r = average;
                 }
 
-                if(rising)
+                if(s.r > average)
                 {
                     if(s.r > next_max.r)
                     {
@@ -156,6 +202,12 @@ public class StepDetector implements SensorEventListener
                 last_sample = s;
             }
         }
+
+            fos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
     
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
